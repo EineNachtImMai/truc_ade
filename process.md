@@ -57,3 +57,5 @@ curl 'https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.
 - [?] displayConfigId
     - idk what this does
     - doesn't seem to change, so let's not touch it
+
+We can manipulate these parameters to get the calendars we need.
