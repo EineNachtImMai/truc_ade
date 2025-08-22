@@ -59,3 +59,12 @@ curl 'https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.
     - doesn't seem to change, so let's not touch it
 
 We can manipulate these parameters to get the calendars we need.
+
+!!!
+This code requires pkg-config and openssl to work:
+```nix
+nix-shell -p pkg-config openssl
+```
+
+> [!todo]
+> Make a nix-shell or nix-flake

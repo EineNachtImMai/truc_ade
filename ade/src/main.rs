@@ -1,23 +1,189 @@
-use std::fs::read_to_string;
+use std::{
+    fs::read_to_string,
+    io::{prelude::*, BufReader, Write},
+    net::{TcpListener, TcpStream},
+    process::{Command, Stdio},
+};
+
+use itertools::Itertools;
 
 use chrono::prelude::*;
-use icalendar::{Calendar, CalendarComponent, Component};
+use icalendar::{
+    Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event, EventLike,
+};
+
+// NOTE: The ADE cal goes from 6h to 21h
 
 fn main() {
-    let contents = read_to_string("../ade_request_test_ICAL.ics").unwrap();
+    serve(get_calendar_list());
+}
 
-    let parsed_calendar: Calendar = contents.parse().unwrap();
+// input: an iCal in the Calendar format
+// output: an iterator of (startTime, endTime) pairs for each event
+fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
+    let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
-    for component in &parsed_calendar.components {
+    for component in &cal.components {
         if let CalendarComponent::Event(event) = component {
-            if let DateTime(Utc(time)) = event.get_end().unwrap() {
-            println!(
-                "Start: {:?}, End: {:?}, Now: {:?}",
-                event.get_start().unwrap(),
-                event.get_end().unwrap(),
-                Local::now()
-            )
+            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) =
+                event.get_start().unwrap()
+            {
+                cut_times.push(time);
+            };
+            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) = event.get_end().unwrap()
+            {
+                cut_times.push(time);
             }
         }
     }
+
+    cut_times
+}
+
+fn get_calendar_list() -> Vec<String> {
+    // HACK: hardcoded file search for now.
+    // TODO: make it an input instead so we can use curl to query the calendars
+    let resource_ids: Vec<u16> = vec![
+        3224, 3223, 3222, 3260, 3259, 3258, 3254, 3253, 3252, 3251, 3250, 3249, 3248, 3247, 3280,
+        3230, 3296, 3329, 3330, 3331, 3327, 3314, 3315, 3316, 3318,
+    ];
+
+    resource_ids
+        .iter()
+        .map(|resource_id| fetch_ical_from_url(*resource_id))
+        .collect()
+
+    // room no to ADE id:
+    // TD01: 3224
+    // TD02: 3223
+    // TD03: 3222
+    // TD04: 3260
+    // TD05: 3259
+    // TD06: 3258
+    // TD07: 3254
+    // TD08: 3253
+    // TD09: 3252
+    // TD10: 3251
+    // TD11: 3250
+    // TD12: 3249
+    // TD13: 3248
+    // TD14: 3247
+    // TD15: 3280
+    // TD16:
+    // TD17: 3230
+    // TD18:
+    // TD19:
+    // TD20: 3296
+    // TD21: 3329
+    // TD22: 3330
+    // TD23: 3331
+    // TD24: 3327
+    // TD25: 3314
+    // TD26: 3315
+    // TD27: 3316
+    // TD28: 3318
+}
+
+fn fetch_ical_from_url(resource: u16) -> String {
+    let first_date = "2025-03-27";
+    let last_date = "2025-03-28";
+    let url = format!("https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={resource}&projectId=1&calType=ical&firstDate={first_date}&lastDate={last_date}&displayConfigId=71");
+    let response = reqwest::blocking::get(url).unwrap();
+    let ical = response.text().unwrap();
+
+    ical
+}
+
+fn get_cut_times(calendar_list: Vec<String>) -> Vec<DateTime<Utc>> {
+    let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
+
+    for calendar_file in calendar_list.iter() {
+        let cal: Calendar = calendar_file.parse().unwrap();
+        cut_times.extend(parse_cal_to_cut_times(cal));
+    }
+
+    // sort the times and remove duplicate times
+    cut_times.sort();
+    cut_times.dedup();
+
+    cut_times
+}
+
+fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Vec<String>) -> String {
+    let mut free_rooms: Vec<&str> = vec!["EA-S106/S107 (TD06)", "EA-S108/S109 (TD07)", "EA-S008/S009 (TD17)", "EA-S101/S102 (TD04)", "EA-S104/S105 (TD05)", "EA-S110/S111 (TD08)", "EA-S112/S113 (TD09)", "EA-S114 (TD10)", "EA-S115/S116 (TD11)", "EA-S117/S118 (TD12)", "EA-S119/S120 (TD13)", "EA-S121/S122 (TD14)", "EA-S225 (TD15)", "EB-P010/P011 (TD20)", "EB-P117 (TD21)", "EB-P118/P119 (TD22)", "EB-P121 (TD23)", "EB-P123 (TD24)", "EB-P145 (TD25)", "EB-P147 (TD26)", "EB-P148/P150 (TD27)", "EB-P153/P156 (TD28)"];
+
+    for calendar_file in calendar_list.iter() {
+        let cal: Calendar = calendar_file.parse().unwrap();
+        for component in &cal.components {
+            if let CalendarComponent::Event(event) = component {
+                if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_start_time)) =
+                    event.get_start().unwrap()
+                {
+                    if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_end_time)) =
+                        event.get_end().unwrap()
+                    {
+                        if &event_start_time <= start_time && start_time < &event_end_time {
+                            free_rooms.retain(|value| *value != event.get_location().unwrap());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    free_rooms.join(", ")
+}
+
+// TODO: make this function
+fn get_calendar(calendar_list: Vec<String>) -> Calendar {
+    let mut cal: Calendar = Calendar::new();
+
+    let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = get_cut_times(calendar_list.clone())
+        .into_iter()
+        .tuple_windows()
+        .collect();
+
+    for (start_time, end_time) in cut_times.iter() {
+        let free_rooms = get_free_rooms(start_time, calendar_list.clone());
+        let start = DatePerhapsTime::DateTime(CalendarDateTime::Utc(start_time.clone()));
+        let end = DatePerhapsTime::DateTime(CalendarDateTime::Utc(end_time.clone()));
+        cal.push(
+            Event::new()
+                .description("Salles Libres:")
+                .location(&free_rooms)
+                .starts(start)
+                .ends(end),
+        );
+    }
+
+    cal.done()
+}
+
+fn serve(calendar_list: Vec<String>) {
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+
+    for stream in listener.incoming() {
+        // NOTE: debug purposes, remove in prod
+        println!["Got a connection!"];
+        let stream = stream.unwrap();
+
+        handle_connection(stream, calendar_list.clone());
+    }
+}
+
+fn handle_connection(mut stream: TcpStream, calendar_list: Vec<String>) {
+    let buf_reader = BufReader::new(&stream);
+    let http_request: Vec<_> = buf_reader
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
+
+    let content = format!["{}", get_calendar(calendar_list)];
+    let length = content.len();
+    print!("{}", content);
+
+    let response = format!["HTTP/1.1 200 OK\r\nContent-Length: {length}\r\n\r\n{content}"];
+
+    stream.write_all(response.as_bytes()).unwrap();
 }
