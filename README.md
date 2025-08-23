@@ -6,7 +6,7 @@ This project was originally intended for my own use, but I thought I might as we
 It solves a simple problem: I don't wanna spend 20 minutes looking for a free room ever time I don't have class. It queries the ADE API,
 retrieves the schedule for every room, and creates a new calendar that shows what rooms are free at any given time.
 It exposes a simple web API that re-computes this calendar (in case there were any changes) and outputs every time it is queried.
-Therefore, if you host this utility, you can add it to you ADE calendar app by using it as an input URL (see the [ADE app integration](#integration) section)
+Therefore, if you host this utility, you can add it to you ADE calendar app by using it as an input URL (see the [ADE app integration](#ade-app-integration) section)
 
 ## Building and running
 
@@ -61,7 +61,7 @@ nix run
 
 Or simply execute the binary in result/bin/ade after the build step is complete.
 
-## ADE app integration #integration
+## ADE app integration
 
 This app is exposed through port `7878` (currently this is hardcoded, however it will later become an argument).
 Any request to this port will be answered with the updated calendar. Therefore, if you're hosting this app, you can add the calendar to your ADE app:
