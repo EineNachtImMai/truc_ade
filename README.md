@@ -15,16 +15,10 @@ This app is a cargo project.
 ### Requirements
 
 The app requires `pkg-config` at build time, and `openssl` at runtime.
-If you're using the Nix package manager (which is *recommended* as the app has already been packaged for it), these dependencies are already being taken care of.
+If you're using the Nix package manager (which is **recommended** as the app has already been packaged for it), these dependencies are already being taken care of.
 Otherwise, make sure to have them installed using your package manager of choice before trying to build or run the program.
 
 ### Building
-
-You can build the app with:
-
-```bash
-cargo build --release
-```
 
 If using nix, you have 2 options.
 
@@ -41,7 +35,21 @@ nix build
 nix-build
 ```
 
+You can build the app without nix using:
+
+```bash
+cargo build --release
+```
+
 ### Running
+
+If you use nix, you can simply run:
+
+```bash
+nix run
+```
+
+Or simply execute the binary in result/bin/ade after the build step is complete.
 
 To execute the program without nix, you can run:
 
@@ -52,14 +60,6 @@ cargo run
 > [!WARNING]
 > Note that this method *does not apply the optimizations from `cago build --release`*.
 > If you want the optimizations, you can run the app by simply executing the result from your build.
-
-If you use nix, you can simply run:
-
-```bash
-nix run
-```
-
-Or simply execute the binary in result/bin/ade after the build step is complete.
 
 ## ADE app integration
 
