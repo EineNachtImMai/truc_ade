@@ -18,8 +18,6 @@ fn main() {
     serve(get_calendar_list());
 }
 
-// input: an iCal in the Calendar format
-// output: an iterator of (startTime, endTime) pairs for each event
 fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
@@ -41,8 +39,6 @@ fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
 }
 
 fn get_calendar_list() -> Vec<String> {
-    // HACK: hardcoded file search for now.
-    // TODO: make it an input instead so we can use curl to query the calendars
     let resource_ids: Vec<u16> = vec![
         3224, 3223, 3222, 3260, 3259, 3258, 3254, 3253, 3252, 3251, 3250, 3249, 3248, 3247, 3280,
         3230, 3296, 3329, 3330, 3331, 3327, 3314, 3315, 3316, 3318,
