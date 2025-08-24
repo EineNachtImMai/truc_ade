@@ -1,8 +1,6 @@
 # Urgent
 
 # High
-- automatically update the time window it covers
-- allow user to choose how long of a period the app covers (default 1 week)
 - host it on my server to test it in prod conditions
 
 # Medium
@@ -14,8 +12,15 @@
 - make it multithreaded??? Useful if used by more than 3 people
 - QR code for easier ADE app integration
 
+# Not planned
+- allow user to choose how long of a period the app covers (default 1 day)
+
 
 
 
 
 # Unclassified
+
+
+# DONE
+- automatically update the time window it covers

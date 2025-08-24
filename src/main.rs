@@ -1,13 +1,11 @@
 use std::{
-    fs::read_to_string,
     io::{prelude::*, BufReader, Write},
     net::{TcpListener, TcpStream},
-    process::{Command, Stdio},
 };
 
 use itertools::Itertools;
 
-use chrono::prelude::*;
+use chrono::{prelude::*, Duration};
 use icalendar::{
     Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event, EventLike,
 };
@@ -80,9 +78,17 @@ fn get_calendar_list() -> Vec<String> {
     // TD28: 3318
 }
 
+fn get_time_interval() -> (String, String) {
+    let today = format!("{}", Local::now());
+    let tomorrow = format!("{}", Local::now() + Duration::days(1));
+    let first_date = today.split(" ").collect::<Vec<&str>>()[0].to_string();
+    let last_date = tomorrow.split(" ").collect::<Vec<&str>>()[0].to_string();
+
+    (first_date, last_date)
+}
+
 fn fetch_ical_from_url(resource: u16) -> String {
-    let first_date = "2025-03-27";
-    let last_date = "2025-03-28";
+    let (first_date, last_date) = get_time_interval();
     let url = format!("https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={resource}&projectId=1&calType=ical&firstDate={first_date}&lastDate={last_date}&displayConfigId=71");
     let response = reqwest::blocking::get(url).unwrap();
     let ical = response.text().unwrap();
@@ -106,7 +112,30 @@ fn get_cut_times(calendar_list: Vec<String>) -> Vec<DateTime<Utc>> {
 }
 
 fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Vec<String>) -> String {
-    let mut free_rooms: Vec<&str> = vec!["EA-S106/S107 (TD06)", "EA-S108/S109 (TD07)", "EA-S008/S009 (TD17)", "EA-S101/S102 (TD04)", "EA-S104/S105 (TD05)", "EA-S110/S111 (TD08)", "EA-S112/S113 (TD09)", "EA-S114 (TD10)", "EA-S115/S116 (TD11)", "EA-S117/S118 (TD12)", "EA-S119/S120 (TD13)", "EA-S121/S122 (TD14)", "EA-S225 (TD15)", "EB-P010/P011 (TD20)", "EB-P117 (TD21)", "EB-P118/P119 (TD22)", "EB-P121 (TD23)", "EB-P123 (TD24)", "EB-P145 (TD25)", "EB-P147 (TD26)", "EB-P148/P150 (TD27)", "EB-P153/P156 (TD28)"];
+    let mut free_rooms: Vec<&str> = vec![
+        "EA-S106/S107 (TD06)",
+        "EA-S108/S109 (TD07)",
+        "EA-S008/S009 (TD17)",
+        "EA-S101/S102 (TD04)",
+        "EA-S104/S105 (TD05)",
+        "EA-S110/S111 (TD08)",
+        "EA-S112/S113 (TD09)",
+        "EA-S114 (TD10)",
+        "EA-S115/S116 (TD11)",
+        "EA-S117/S118 (TD12)",
+        "EA-S119/S120 (TD13)",
+        "EA-S121/S122 (TD14)",
+        "EA-S225 (TD15)",
+        "EB-P010/P011 (TD20)",
+        "EB-P117 (TD21)",
+        "EB-P118/P119 (TD22)",
+        "EB-P121 (TD23)",
+        "EB-P123 (TD24)",
+        "EB-P145 (TD25)",
+        "EB-P147 (TD26)",
+        "EB-P148/P150 (TD27)",
+        "EB-P153/P156 (TD28)",
+    ];
 
     for calendar_file in calendar_list.iter() {
         let cal: Calendar = calendar_file.parse().unwrap();
@@ -169,7 +198,7 @@ fn serve(calendar_list: Vec<String>) {
 
 fn handle_connection(mut stream: TcpStream, calendar_list: Vec<String>) {
     let buf_reader = BufReader::new(&stream);
-    let http_request: Vec<_> = buf_reader
+    let _http_request: Vec<_> = buf_reader
         .lines()
         .map(|result| result.unwrap())
         .take_while(|line| !line.is_empty())
@@ -177,7 +206,6 @@ fn handle_connection(mut stream: TcpStream, calendar_list: Vec<String>) {
 
     let content = format!["{}", get_calendar(calendar_list)];
     let length = content.len();
-    print!("{}", content);
 
     let response = format!["HTTP/1.1 200 OK\r\nContent-Length: {length}\r\n\r\n{content}"];
 
