@@ -81,7 +81,7 @@ fn get_calendar_list() -> Vec<String> {
 
 fn get_time_interval() -> (String, String) {
     let today = format!("{}", Local::now());
-    let tomorrow = format!("{}", Local::now() + Duration::days(1));
+    let tomorrow = format!("{}", Local::now() + Duration::days(3));
     let first_date = today.split(" ").collect::<Vec<&str>>()[0].to_string();
     let last_date = tomorrow.split(" ").collect::<Vec<&str>>()[0].to_string();
 
