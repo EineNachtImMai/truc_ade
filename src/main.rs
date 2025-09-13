@@ -8,6 +8,7 @@ use itertools::Itertools;
 use chrono::{prelude::*, Duration};
 use icalendar::{
     Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event, EventLike,
+    Property,
 };
 
 // NOTE: The ADE cal goes from 6h to 21h
@@ -161,7 +162,12 @@ fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Vec<String>) -> Str
 
 // TODO: make this function
 fn get_calendar(calendar_list: Vec<String>) -> Calendar {
-    let mut cal: Calendar = Calendar::new();
+    let mut cal: Calendar = Calendar::empty();
+
+    cal.append_property(Property::new("METHOD", "REQUEST"));
+    cal.append_property(Property::new("PRODID", "-//ADE/version 6.0"));
+    cal.append_property(Property::new("VERSION", "2.0"));
+    cal.append_property(Property::new("CALSCALE", "GREGORIAN"));
 
     let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = get_cut_times(calendar_list.clone())
         .into_iter()
@@ -207,7 +213,7 @@ fn handle_connection(mut stream: TcpStream, calendar_list: Vec<String>) {
     let content = format!["{}", get_calendar(calendar_list)];
     let length = content.len();
 
-    let response = format!["HTTP/1.1 200 OK\r\nContent-Length: {length}\r\n\r\n{content}"];
+    let response = format!["HTTP/1.1 200 OK\r\nServer: nginx\r\nConnection: keep-alive\r\nSet-Cookie: JSESSIONID=B993644BFDE8DC479AD092529DAB0BC6; Path=/jsp; Secure; HttpOnly\r\nStrict-Transport-Security: max-age=31536000;includeSubDomains\r\nX-Frame-Options: SAMEORIGIN\r\nX-Content-Type-Options: nosniff\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nExpires: 0\r\nContent-Type: text/calendar;charset=UTF-8\r\nContent-Length: {length}\r\nContent-Disposition: inline; filename=ADECal.ics\r\n\r\n{content}"];
 
     stream.write_all(response.as_bytes()).unwrap();
 }
