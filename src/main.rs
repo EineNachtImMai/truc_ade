@@ -183,7 +183,11 @@ fn get_calendar(calendar_list: Vec<String>) -> Calendar {
                 .description("Salles Libres:")
                 .location(&free_rooms)
                 .starts(start)
-                .ends(end),
+                .ends(end)
+                .summary("Salles Libres")
+                .last_modified(Local::now().into())
+                .created(DateTime::from_timestamp_nanos(0))
+                .sequence(2141946518),
         );
     }
 
@@ -209,6 +213,8 @@ fn handle_connection(mut stream: TcpStream, calendar_list: Vec<String>) {
         .map(|result| result.unwrap())
         .take_while(|line| !line.is_empty())
         .collect();
+
+    println!["{:?}", _http_request];
 
     let content = format!["{}", get_calendar(calendar_list)];
     let length = content.len();
