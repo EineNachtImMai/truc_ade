@@ -9,4 +9,6 @@ COPY Cargo.lock .
 RUN apt-get update && apt-get install -y openssl pkg-config && rm -rf /var/lib/apt/lists/*;
 RUN cargo build --release;
 
+EXPOSE 7878
+
 CMD ["/usr/local/ade/target/release/ade"]

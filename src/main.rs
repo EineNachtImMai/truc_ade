@@ -195,7 +195,7 @@ fn get_calendar(calendar_list: Vec<String>) -> Calendar {
 }
 
 fn serve(calendar_list: Vec<String>) {
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let listener = TcpListener::bind("0.0.0.0:7878").unwrap();
 
     for stream in listener.incoming() {
         // NOTE: debug purposes, remove in prod

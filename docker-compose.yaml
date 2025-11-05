@@ -2,5 +2,5 @@ services:
   ade_sa_mere:
     build: .
     ports:
-      - 9008:7878
+      - "9008:7878"
     restart: unless-stopped
