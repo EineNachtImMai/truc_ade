@@ -63,7 +63,7 @@ cargo run
 
 The project also includes a Dockerfile and docker-compose.yaml. You can therefore also use:
 
-```
+```bash
 docker compose up
 ```
 
