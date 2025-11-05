@@ -18,7 +18,7 @@ The app requires `pkg-config` at build time, and `openssl` at runtime.
 If you're using the Nix package manager (which is **recommended** as the app has already been packaged for it), these dependencies are already being taken care of.
 Otherwise, make sure to have them installed using your package manager of choice before trying to build or run the program.
 
-### Building
+### Building from Source
 
 If using nix, you have 2 options.
 
@@ -60,6 +60,12 @@ cargo run
 > [!WARNING]
 > Note that this method *does not apply the optimizations from `cago build --release`*.
 > If you want the optimizations, you can run the app by simply executing the result from your build.
+
+The project also includes a Dockerfile and docker-compose.yaml. You can therefore also use:
+
+```
+docker compose up
+```
 
 ## ADE app integration
 
