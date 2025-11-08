@@ -1,15 +1,12 @@
-mod arg_parsing;
-mod parsing;
-
 use std::{
     io::{prelude::*, BufReader, Write},
     net::{TcpListener, TcpStream},
 };
 
-use arg_parsing::Args;
+use crate::cli_params::arg_parsing::Args;
 use clap::Parser;
 
-use parsing::get_calendar;
+use crate::calendar_parsing::parsing::get_calendar;
 
 pub fn serve(calendar_list: Vec<String>) {
     let args = Args::parse();
