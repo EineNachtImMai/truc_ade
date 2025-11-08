@@ -1,4 +1,5 @@
 use std::{
+    env, fmt,
     io::{prelude::*, BufReader, Write},
     net::{TcpListener, TcpStream},
 };
@@ -10,6 +11,17 @@ use icalendar::{
     Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event, EventLike,
     Property,
 };
+
+use clap::Parser;
+
+/// An API to find empty classrooms
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// The port on which to expose the API (default 7878)
+    #[arg(short, long, default_value_t = 7878)]
+    port: u16,
+}
 
 // NOTE: The ADE cal goes from 6h to 21h
 
@@ -195,7 +207,10 @@ fn get_calendar(calendar_list: Vec<String>) -> Calendar {
 }
 
 fn serve(calendar_list: Vec<String>) {
-    let listener = TcpListener::bind("0.0.0.0:7878").unwrap();
+    let args = Args::parse();
+    let port = args.port;
+    let bind_address = format!("0.0.0.0:{port}");
+    let listener = TcpListener::bind(bind_address).unwrap();
 
     for stream in listener.incoming() {
         // NOTE: debug purposes, remove in prod
