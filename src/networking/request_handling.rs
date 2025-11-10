@@ -12,31 +12,25 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
 use std::convert::Infallible;
 
-async fn handle_conn() {
-    let make_svc = make_service_fn(|_conn| async {
-        Ok::<_, Infallible>(service_fn(handle_connection(stream, calendar_list, req)))
-    });
+pub async fn serve(calendar_list: Vec<String>) {
+    let args = Args::parse();
+    let port = args.port;
+    let bind_address = format!("0.0.0.0:{port}");
+    let listener = TcpListener::bind(bind_address).unwrap();
+
+    let handle = |req: Request<Body>| -> Result<Response<Body>, Infallible> {
+        handle_connection(calendar_list.clone(), req)
+    };
+
+    let make_svc = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle(req))) });
 
     let addr = ([127, 0, 0, 1], 3000).into();
     let server = Server::bind(&addr).serve(make_svc);
 
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
-    }
-}
-
-pub fn serve(calendar_list: Vec<String>) {
-    let args = Args::parse();
-    let port = args.port;
-    let bind_address = format!("0.0.0.0:{port}");
-    let listener = TcpListener::bind(bind_address).unwrap();
-
-    for stream in listener.incoming() {
-        // NOTE: debug purposes, remove in prod
-        println!["Got a connection!"];
-        let stream = stream.unwrap();
-
-        handle_connection(stream, calendar_list.clone());
+    } else {
+        println!("Got a connection!")
     }
 }
 
