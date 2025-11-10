@@ -5,6 +5,8 @@ use icalendar::{
 };
 use itertools::Itertools;
 
+use std::sync::Arc;
+
 fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
@@ -25,7 +27,7 @@ fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
     cut_times
 }
 
-fn get_cut_times(calendar_list: Vec<String>) -> Vec<DateTime<Utc>> {
+fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
     for calendar_file in calendar_list.iter() {
@@ -40,7 +42,7 @@ fn get_cut_times(calendar_list: Vec<String>) -> Vec<DateTime<Utc>> {
     cut_times
 }
 
-fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Vec<String>) -> String {
+fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Arc<Vec<String>>) -> String {
     let mut free_rooms: Vec<&str> = vec![
         "EA-S106/S107 (TD06)",
         "EA-S108/S109 (TD07)",
@@ -88,7 +90,7 @@ fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Vec<String>) -> Str
     free_rooms.join(", ")
 }
 
-pub fn get_calendar(calendar_list: Vec<String>) -> Calendar {
+pub fn get_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
     let mut cal: Calendar = Calendar::empty();
 
     cal.append_property(Property::new("METHOD", "REQUEST"));

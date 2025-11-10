@@ -1,7 +1,9 @@
 use std::{
     io::{prelude::*, BufReader, Write},
-    net::{TcpListener, TcpStream},
+    net::{SocketAddr, TcpListener, TcpStream},
 };
+
+use std::sync::Arc;
 
 use crate::cli_params::arg_parsing::Args;
 use clap::Parser;
@@ -9,35 +11,41 @@ use clap::Parser;
 use crate::calendar_parsing::parsing::get_calendar;
 
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
+use hyper::{Body, Request, Response, Server, StatusCode};
 use std::convert::Infallible;
 
-pub async fn serve(calendar_list: Vec<String>) {
+pub async fn serve(cal: Vec<String>) {
     let args = Args::parse();
     let port = args.port;
-    let bind_address = format!("0.0.0.0:{port}");
-    let listener = TcpListener::bind(bind_address).unwrap();
 
-    let handle = |req: Request<Body>| -> Result<Response<Body>, Infallible> {
-        handle_connection(calendar_list.clone(), req)
-    };
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    let make_svc = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle(req))) });
+    let cal_arc = Arc::new(cal);
 
-    let addr = ([127, 0, 0, 1], 3000).into();
-    let server = Server::bind(&addr).serve(make_svc);
+    eprintln!("Listening on {}", addr);
 
-    if let Err(e) = server.await {
-        eprintln!("server error: {}", e);
+    // The closure passed to `make_service_fn` is executed each time a new
+    // connection is established and returns a future that resolves to a
+    // service.
+    let make_service = make_service_fn(move |_conn| {
+        let cal_clone = Arc::clone(&cal_arc);
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req| {
+                let cal_clone = Arc::clone(&cal_clone);
+                async move { Ok::<_, Infallible>(handle_connection(cal_clone, req).await) }
+            }))
+        }
+    });
+    // Start the server.
+    if let Err(e) = Server::bind(&addr).serve(make_service).await {
+        eprintln!("Error: {:#}", e);
+        std::process::exit(1);
     } else {
         println!("Got a connection!")
     }
 }
 
-async fn handle_connection(
-    calendar_list: Vec<String>,
-    req: Request<Body>,
-) -> Result<Response<Body>, Infallible> {
+async fn handle_connection(calendar_list: Arc<Vec<String>>, req: Request<Body>) -> Response<Body> {
     println!["{:?}", req];
 
     let content = format!["{}", get_calendar(calendar_list)];
@@ -45,11 +53,9 @@ async fn handle_connection(
 
     let response = format!["HTTP/1.1 200 OK\r\nContent-Type: text/calendar;charset=UTF-8\r\nContent-Length: {length}\r\nContent-Disposition: inline; filename=ADECal.ics\r\n\r\n{content}"];
 
-    stream.write_all(response.as_bytes()).unwrap();
-
-    Ok(Response::builder()
+    Response::builder()
         .header("Content-Type", "text/calendar;charset=UTF-8")
         .header("Content-Disposition", "inline; filename=ADECal.ics")
         .body(Body::from(content))
-        .unwrap())
+        .unwrap()
 }

@@ -1,15 +1,22 @@
 use chrono::{prelude::*, Duration};
+use futures::stream::{self, StreamExt};
 
-pub fn get_calendar_list() -> Vec<String> {
+pub async fn get_calendar_list() -> Vec<String> {
     let resource_ids: Vec<u16> = vec![
         3224, 3223, 3222, 3260, 3259, 3258, 3254, 3253, 3252, 3251, 3250, 3249, 3248, 3247, 3280,
         3230, 3296, 3329, 3330, 3331, 3327, 3314, 3315, 3316, 3318,
     ];
 
-    resource_ids
-        .iter()
-        .map(|resource_id| fetch_ical_from_url(*resource_id))
-        .collect()
+    let mut return_vec: Vec<String> = Vec::new();
+
+    let mut stream = stream::iter(resource_ids);
+
+    while let Some(cal) = stream.next().await {
+        let ret_val = fetch_ical_from_url(cal).await;
+        return_vec.push(ret_val);
+    }
+
+    return_vec
 
     // room no to ADE id:
     // TD01: 3224
@@ -51,11 +58,12 @@ fn get_time_interval() -> (String, String) {
     (first_date, last_date)
 }
 
-fn fetch_ical_from_url(resource: u16) -> String {
+async fn fetch_ical_from_url(resource: u16) -> String {
     let (first_date, last_date) = get_time_interval();
     let url = format!("https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={resource}&projectId=1&calType=ical&firstDate={first_date}&lastDate={last_date}&displayConfigId=71");
-    let response = reqwest::blocking::get(url).unwrap();
-    let ical = response.text().unwrap();
+    // let response = reqwest::blocking::get(url).unwrap();
+    let response = reqwest::get(url).await.unwrap();
+    let ical = response.text().await.unwrap();
 
     ical
 }

@@ -9,5 +9,5 @@ use free_rooms::serve_free_rooms;
 
 #[tokio::main]
 async fn main() {
-    serve_free_rooms();
+    serve_free_rooms().await;
 }
