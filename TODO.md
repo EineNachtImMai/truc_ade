@@ -7,7 +7,7 @@
 - memory and speed optimizations (borrow the array of calendars instead of cloning it every time)
 - add other rooms and options to select which rooms you want to watch
 - Zik thingy
-- make it multithreaded??? Useful if used by more than 3 people
+- investigate why so slow despite multithreading
 
 # Low
 - allow user to choose how long of a period the app covers (default 1 day)
@@ -26,3 +26,4 @@
 # DONE
 - automatically update the time window it covers
 - host it on my server to test it in prod conditions
+- make it multithreaded??? Useful if used by more than 3 people
