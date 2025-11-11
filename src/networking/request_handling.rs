@@ -1,7 +1,6 @@
-use std::{
-    io::{prelude::*, BufReader, Write},
-    net::{SocketAddr, TcpListener, TcpStream},
-};
+use std::net::SocketAddr;
+
+use form_urlencoded;
 
 use std::sync::Arc;
 
@@ -11,8 +10,13 @@ use clap::Parser;
 use crate::calendar_parsing::parsing::get_calendar;
 
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server, StatusCode};
+use hyper::{Body, Request, Response, Server};
 use std::convert::Infallible;
+
+enum Mode {
+    FreeRooms,
+    Zik,
+}
 
 pub async fn serve(cal: Vec<String>) {
     let args = Args::parse();
@@ -24,9 +28,6 @@ pub async fn serve(cal: Vec<String>) {
 
     eprintln!("Listening on {}", addr);
 
-    // The closure passed to `make_service_fn` is executed each time a new
-    // connection is established and returns a future that resolves to a
-    // service.
     let make_service = make_service_fn(move |_conn| {
         let cal_clone = Arc::clone(&cal_arc);
         async move {
@@ -36,7 +37,7 @@ pub async fn serve(cal: Vec<String>) {
             }))
         }
     });
-    // Start the server.
+
     if let Err(e) = Server::bind(&addr).serve(make_service).await {
         eprintln!("Error: {:#}", e);
         std::process::exit(1);
@@ -48,10 +49,34 @@ pub async fn serve(cal: Vec<String>) {
 async fn handle_connection(calendar_list: Arc<Vec<String>>, req: Request<Body>) -> Response<Body> {
     println!["{:?}", req];
 
-    let content = format!["{}", get_calendar(calendar_list)];
-    let length = content.len();
+    let mut mode: Mode = Mode::FreeRooms;
 
-    let response = format!["HTTP/1.1 200 OK\r\nContent-Type: text/calendar;charset=UTF-8\r\nContent-Length: {length}\r\nContent-Disposition: inline; filename=ADECal.ics\r\n\r\n{content}"];
+    // parse the request parameters to get the chosen mode
+    if let Some(query) = req.uri().query() {
+        for (k, v) in form_urlencoded::parse(query.as_bytes()) {
+            if k == "mode" {
+                println!["mode: {}", v];
+                match &*v {
+                    "zik" => mode = Mode::Zik,
+                    _ => mode = Mode::FreeRooms,
+                }
+            }
+        }
+    }
+
+    // default to an empty string in case something fucks up and doesnt change the content (this
+    // supposedly can't happen)
+    let mut content: String = String::from("");
+
+    match mode {
+        Mode::Zik => {
+            println!["chosen mode: zik"];
+        }
+        Mode::FreeRooms => {
+            println!["chosen mode: free rooms"];
+            content = format!["{}", get_calendar(calendar_list)];
+        }
+    }
 
     Response::builder()
         .header("Content-Type", "text/calendar;charset=UTF-8")

@@ -39,6 +39,8 @@ fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
     cut_times.sort();
     cut_times.dedup();
 
+    // TODO: remove the awkward 10-min time periods
+
     cut_times
 }
 
@@ -70,19 +72,36 @@ fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Arc<Vec<String>>) -
 
     for calendar_file in calendar_list.iter() {
         let cal: Calendar = calendar_file.parse().unwrap();
+
         for component in &cal.components {
-            if let CalendarComponent::Event(event) = component {
-                if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_start_time)) =
-                    event.get_start().unwrap()
-                {
-                    if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_end_time)) =
-                        event.get_end().unwrap()
-                    {
-                        if &event_start_time <= start_time && start_time < &event_end_time {
-                            free_rooms.retain(|value| *value != event.get_location().unwrap());
-                        }
-                    }
-                }
+            let mut start: DateTime<Utc>;
+            let mut end: DateTime<Utc>;
+            let mut event: &Event;
+
+            if let CalendarComponent::Event(evt) = component {
+                event = evt;
+            } else {
+                continue;
+            }
+
+            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_start_time)) =
+                event.get_start().unwrap()
+            {
+                start = event_start_time;
+            } else {
+                continue;
+            }
+
+            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_end_time)) =
+                event.get_end().unwrap()
+            {
+                end = event_end_time;
+            } else {
+                continue;
+            }
+
+            if &start <= start_time && start_time < &end {
+                free_rooms.retain(|value| *value != event.get_location().unwrap());
             }
         }
     }
