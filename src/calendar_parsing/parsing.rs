@@ -43,14 +43,15 @@ fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
     // remove chunks under 20 minutes
     let first_elem = cut_times[0];
 
-    let pair_cut_times = cut_times.into_iter().tuple_windows().collect();
+    let pair_cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> =
+        cut_times.clone().into_iter().tuple_windows().collect();
 
     for (start, end) in pair_cut_times {
-        if (end - start <= Duration::minutes(20)) {
-            if (start == first_elem) {
-                cut_times.retain(|value| value != end);
+        if end - start <= Duration::minutes(20) {
+            if start == first_elem {
+                cut_times.retain(|value| value != &end);
             } else {
-                cut_times.retain(|value| value != start);
+                cut_times.retain(|value| value != &start);
             }
         }
     }
@@ -92,9 +93,9 @@ fn get_free_rooms(
         let cal: Calendar = calendar_file.parse().unwrap();
 
         for component in &cal.components {
-            let mut start: DateTime<Utc>;
-            let mut end: DateTime<Utc>;
-            let mut event: &Event;
+            let start: DateTime<Utc>;
+            let end: DateTime<Utc>;
+            let event: &Event;
 
             if let CalendarComponent::Event(evt) = component {
                 event = evt;
