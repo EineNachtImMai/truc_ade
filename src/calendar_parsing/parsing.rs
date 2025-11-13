@@ -1,4 +1,4 @@
-use chrono::prelude::*;
+use chrono::{prelude::*, Duration};
 use icalendar::{
     Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event, EventLike,
     Property,
@@ -17,6 +17,7 @@ fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
             {
                 cut_times.push(time);
             };
+
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) = event.get_end().unwrap()
             {
                 cut_times.push(time);
@@ -39,12 +40,29 @@ fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
     cut_times.sort();
     cut_times.dedup();
 
-    // TODO: remove the awkward 10-min time periods
+    // remove chunks under 20 minutes
+    let first_elem = cut_times[0];
+
+    let pair_cut_times = cut_times.into_iter().tuple_windows().collect();
+
+    for (start, end) in pair_cut_times {
+        if (end - start <= Duration::minutes(20)) {
+            if (start == first_elem) {
+                cut_times.retain(|value| value != end);
+            } else {
+                cut_times.retain(|value| value != start);
+            }
+        }
+    }
 
     cut_times
 }
 
-fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Arc<Vec<String>>) -> String {
+fn get_free_rooms(
+    start_time: &DateTime<Utc>,
+    end_time: &DateTime<Utc>,
+    calendar_list: Arc<Vec<String>>,
+) -> String {
     let mut free_rooms: Vec<&str> = vec![
         "EA-S106/S107 (TD06)",
         "EA-S108/S109 (TD07)",
@@ -100,7 +118,9 @@ fn get_free_rooms(start_time: &DateTime<Utc>, calendar_list: Arc<Vec<String>>) -
                 continue;
             }
 
-            if &start <= start_time && start_time < &end {
+            if (&start <= start_time && start_time < &end)
+                || (&start < end_time && end_time <= &end)
+            {
                 free_rooms.retain(|value| *value != event.get_location().unwrap());
             }
         }
@@ -123,7 +143,7 @@ pub fn get_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
         .collect();
 
     for (start_time, end_time) in cut_times.iter() {
-        let free_rooms = get_free_rooms(start_time, calendar_list.clone());
+        let free_rooms = get_free_rooms(start_time, end_time, calendar_list.clone());
         let start = DatePerhapsTime::DateTime(CalendarDateTime::Utc(start_time.clone()));
         let end = DatePerhapsTime::DateTime(CalendarDateTime::Utc(end_time.clone()));
         cal.push(
