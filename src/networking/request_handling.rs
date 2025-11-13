@@ -7,7 +7,7 @@ use std::sync::Arc;
 use crate::cli_params::arg_parsing::Args;
 use clap::Parser;
 
-use crate::calendar_parsing::parsing::get_calendar;
+use crate::calendar_parsing::parsing::{get_free_roooms_calendar, get_zik_calendar};
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
@@ -71,10 +71,11 @@ async fn handle_connection(calendar_list: Arc<Vec<String>>, req: Request<Body>) 
     match mode {
         Mode::Zik => {
             println!["chosen mode: zik"];
+            // content = format!("{}", get_zik_calendar(zik_room_list))
         }
         Mode::FreeRooms => {
             println!["chosen mode: free rooms"];
-            content = format!["{}", get_calendar(calendar_list)];
+            content = format!["{}", get_free_roooms_calendar(calendar_list)];
         }
     }
 

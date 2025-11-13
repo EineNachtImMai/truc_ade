@@ -1,7 +1,7 @@
 use chrono::{prelude::*, Duration};
 use futures::stream::{self, StreamExt};
 
-pub async fn get_calendar_list() -> Vec<String> {
+pub async fn get_free_rooms_calendar_list() -> Vec<String> {
     let resource_ids: Vec<u16> = vec![
         3224, 3223, 3222, 3260, 3259, 3258, 3254, 3253, 3252, 3251, 3250, 3249, 3248, 3247, 3280,
         3230, 3296, 3329, 3330, 3331, 3327, 3314, 3315, 3316, 3318,

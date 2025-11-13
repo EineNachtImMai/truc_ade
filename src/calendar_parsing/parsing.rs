@@ -130,13 +130,19 @@ fn get_free_rooms(
     free_rooms.join(", ")
 }
 
-pub fn get_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
+fn init_ade_cal() -> Calendar {
     let mut cal: Calendar = Calendar::empty();
 
     cal.append_property(Property::new("METHOD", "REQUEST"));
     cal.append_property(Property::new("PRODID", "-//ADE/version 6.0"));
     cal.append_property(Property::new("VERSION", "2.0"));
     cal.append_property(Property::new("CALSCALE", "GREGORIAN"));
+
+    cal
+}
+
+pub fn get_free_roooms_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
+    let mut cal = init_ade_cal();
 
     let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = get_cut_times(calendar_list.clone())
         .into_iter()
@@ -159,6 +165,12 @@ pub fn get_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
                 .sequence(2141946518),
         );
     }
+
+    cal.done()
+}
+
+pub fn get_zik_calendar(room_list: Arc<Vec<String>>) -> Calendar {
+    let mut cal = init_ade_cal();
 
     cal.done()
 }
