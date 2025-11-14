@@ -18,22 +18,29 @@ enum Mode {
     Zik,
 }
 
-pub async fn serve(cal: Vec<String>) {
+pub async fn serve(zik_cal: Vec<String>, free_rooms_cal: Vec<String>) {
     let args = Args::parse();
     let port = args.port;
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    let cal_arc = Arc::new(cal);
+    let free_rooms_cal_arc = Arc::new(free_rooms_cal);
+    let zik_cal_arc = Arc::new(zik_cal);
 
     eprintln!("Listening on {}", addr);
 
     let make_service = make_service_fn(move |_conn| {
-        let cal_clone = Arc::clone(&cal_arc);
+        let free_rooms_cal_clone = Arc::clone(&free_rooms_cal_arc);
+        let zik_cal_clone = Arc::clone(&zik_cal_arc);
         async move {
             Ok::<_, Infallible>(service_fn(move |req| {
-                let cal_clone = Arc::clone(&cal_clone);
-                async move { Ok::<_, Infallible>(handle_connection(cal_clone, req).await) }
+                let free_rooms_cal_clone = Arc::clone(&free_rooms_cal_clone);
+                let zik_cal_clone = Arc::clone(&zik_cal_clone);
+                async move {
+                    Ok::<_, Infallible>(
+                        handle_connection(zik_cal_clone, free_rooms_cal_clone, req).await,
+                    )
+                }
             }))
         }
     });
@@ -46,7 +53,11 @@ pub async fn serve(cal: Vec<String>) {
     }
 }
 
-async fn handle_connection(calendar_list: Arc<Vec<String>>, req: Request<Body>) -> Response<Body> {
+async fn handle_connection(
+    zik_room_list: Arc<Vec<String>>,
+    calendar_list: Arc<Vec<String>>,
+    req: Request<Body>,
+) -> Response<Body> {
     println!["{:?}", req];
 
     let mut mode: Mode = Mode::FreeRooms;
@@ -71,7 +82,7 @@ async fn handle_connection(calendar_list: Arc<Vec<String>>, req: Request<Body>) 
     match mode {
         Mode::Zik => {
             println!["chosen mode: zik"];
-            // content = format!("{}", get_zik_calendar(zik_room_list))
+            content = format!("{}", get_zik_calendar(zik_room_list))
         }
         Mode::FreeRooms => {
             println!["chosen mode: free rooms"];

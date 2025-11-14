@@ -172,5 +172,7 @@ pub fn get_free_roooms_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
 pub fn get_zik_calendar(room_list: Arc<Vec<String>>) -> Calendar {
     let mut cal = init_ade_cal();
 
+    // TODO
+
     cal.done()
 }
