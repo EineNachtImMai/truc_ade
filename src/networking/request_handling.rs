@@ -77,7 +77,7 @@ async fn handle_connection(
 
     // default to an empty string in case something fucks up and doesnt change the content (this
     // supposedly can't happen)
-    let mut content: String = String::from("");
+    let mut content: String;
 
     match mode {
         Mode::Zik => {

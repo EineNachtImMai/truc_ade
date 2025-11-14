@@ -2,6 +2,7 @@
 
 # High
 - tests
+- optimization: in get_free_rooms and get_zik_..., treat all time windows at once
 
 # Medium
 - memory and speed optimizations (borrow the array of calendars instead of cloning it every time)
