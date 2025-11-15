@@ -53,14 +53,18 @@ fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
 
     for component in &cal.components {
         if let CalendarComponent::Event(event) = component {
-            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) =
-                event.get_start().unwrap()
+            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) = match event.get_start()
             {
+                Some(start_) => start_,
+                None => continue, // we simply skip the iteration if we're unable to parse
+            } {
                 cut_times.push(time);
             };
 
-            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) = event.get_end().unwrap()
-            {
+            if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) = match event.get_end() {
+                Some(end_) => end_,
+                None => continue, // we simply skip the iteration if we're unable to parse
+            } {
                 cut_times.push(time);
             }
         }
@@ -73,7 +77,10 @@ fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
     for calendar_file in calendar_list.iter() {
-        let cal: Calendar = calendar_file.parse().unwrap();
+        let cal: Calendar = match calendar_file.parse() {
+            Ok(cal_) => cal_,
+            Err(_) => continue, // NOTE: log?
+        };
         cut_times.extend(parse_cal_to_cut_times(cal));
     }
 
@@ -131,7 +138,10 @@ fn get_free_rooms(
     ];
 
     for calendar_file in calendar_list.iter() {
-        let cal: Calendar = calendar_file.parse().unwrap();
+        let cal: Calendar = match calendar_file.parse() {
+            Ok(cal_) => cal_,
+            Err(_) => continue, // NOTE: log?
+        };
 
         for component in &cal.components {
             let start: DateTime<Utc>;
@@ -145,7 +155,10 @@ fn get_free_rooms(
             }
 
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_start_time)) =
-                event.get_start().unwrap()
+                match event.get_start() {
+                    Some(start_) => start_,
+                    None => continue, // we simply skip the iteration if we're unable to parse
+                }
             {
                 start = event_start_time;
             } else {
@@ -153,17 +166,25 @@ fn get_free_rooms(
             }
 
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_end_time)) =
-                event.get_end().unwrap()
+                match event.get_end() {
+                    Some(end_) => end_,
+                    None => continue, // we simply skip the iteration if we're unable to parse
+                }
             {
                 end = event_end_time;
             } else {
                 continue;
             }
 
+            let loc = match event.get_location() {
+                Some(loc_) => loc_,
+                None => continue,
+            };
+
             if (&start <= start_time && start_time < &end)
                 || (&start < end_time && end_time <= &end)
             {
-                free_rooms.retain(|value| *value != event.get_location().unwrap());
+                free_rooms.retain(|value| *value != loc);
             }
         }
     }
@@ -219,7 +240,10 @@ fn get_allowed_level(
         AllowedActivities::LoudPlayingAndBattery(WindowPosition::Open);
 
     for calendar_file in calendar_list.iter() {
-        let cal: Calendar = calendar_file.parse().unwrap();
+        let cal: Calendar = match calendar_file.parse() {
+            Ok(cal_) => cal_,
+            Err(_) => continue,
+        };
 
         for component in &cal.components {
             let start: DateTime<Utc>;
@@ -233,7 +257,10 @@ fn get_allowed_level(
             }
 
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_start_time)) =
-                event.get_start().unwrap()
+                match event.get_start() {
+                    Some(start_) => start_,
+                    None => continue, // we simply skip the iteration if we're unable to parse
+                }
             {
                 start = event_start_time;
             } else {
@@ -241,7 +268,10 @@ fn get_allowed_level(
             }
 
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_end_time)) =
-                event.get_end().unwrap()
+                match event.get_end() {
+                    Some(end_) => end_,
+                    None => continue, // we simply skip the iteration if we're unable to parse
+                }
             {
                 end = event_end_time;
             } else {
@@ -356,7 +386,7 @@ pub fn get_zik_calendar(room_list: Arc<Vec<String>>) -> Calendar {
                 .location("Le Zik, Le Zik, Le Zik")
                 .starts(start)
                 .ends(end)
-                .summary("Salles Libres")
+                .summary("Volume max")
                 .last_modified(Local::now().into())
                 .created(DateTime::from_timestamp_nanos(0))
                 .sequence(2141946518),

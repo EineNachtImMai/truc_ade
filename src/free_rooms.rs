@@ -5,5 +5,28 @@ use crate::networking::{
 // NOTE: The ADE cal goes from 6h to 21h
 
 pub async fn serve_free_rooms() {
-    serve(get_zik_rooms().await, get_free_rooms_calendar_list().await).await;
+    let zik_rooms;
+    let free_rooms;
+
+    loop {
+        match get_zik_rooms().await {
+            Ok(rooms) => {
+                zik_rooms = rooms;
+                break;
+            }
+            Err(e) => eprintln!("Error: couldn't get Zik rooms ({e}).\nRetrying..."),
+        };
+    }
+
+    loop {
+        match get_free_rooms_calendar_list().await {
+            Ok(rooms) => {
+                free_rooms = rooms;
+                break;
+            }
+            Err(e) => eprintln!("Error: couldn't get free rooms ({e}).\nRetrying..."),
+        }
+    }
+
+    serve(zik_rooms, free_rooms).await;
 }

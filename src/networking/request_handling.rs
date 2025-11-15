@@ -75,9 +75,7 @@ async fn handle_connection(
         }
     }
 
-    // default to an empty string in case something fucks up and doesnt change the content (this
-    // supposedly can't happen)
-    let mut content: String;
+    let content: String;
 
     match mode {
         Mode::Zik => {
@@ -94,5 +92,5 @@ async fn handle_connection(
         .header("Content-Type", "text/calendar;charset=UTF-8")
         .header("Content-Disposition", "inline; filename=ADECal.ics")
         .body(Body::from(content))
-        .unwrap()
+        .unwrap() // TODO: error handling
 }

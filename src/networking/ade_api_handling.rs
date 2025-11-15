@@ -31,7 +31,7 @@ use futures::stream::{self, StreamExt};
 // TD27: 3316
 // TD28: 3318
 
-pub async fn get_free_rooms_calendar_list() -> Vec<String> {
+pub async fn get_free_rooms_calendar_list() -> Result<Vec<String>, reqwest::Error> {
     let resource_ids: Vec<u16> = vec![
         3224, 3223, 3222, 3260, 3259, 3258, 3254, 3253, 3252, 3251, 3250, 3249, 3248, 3247, 3280,
         3230, 3296, 3329, 3330, 3331, 3327, 3314, 3315, 3316, 3318,
@@ -42,11 +42,11 @@ pub async fn get_free_rooms_calendar_list() -> Vec<String> {
     let mut stream = stream::iter(resource_ids);
 
     while let Some(cal) = stream.next().await {
-        let ret_val = fetch_ical_from_url(cal).await;
+        let ret_val = fetch_ical_from_url(cal).await?;
         return_vec.push(ret_val);
     }
 
-    return_vec
+    Ok(return_vec)
 }
 
 fn get_time_interval() -> (String, String) {
@@ -58,17 +58,16 @@ fn get_time_interval() -> (String, String) {
     (first_date, last_date)
 }
 
-async fn fetch_ical_from_url(resource: u16) -> String {
+async fn fetch_ical_from_url(resource: u16) -> Result<String, reqwest::Error> {
     let (first_date, last_date) = get_time_interval();
     let url = format!("https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={resource}&projectId=1&calType=ical&firstDate={first_date}&lastDate={last_date}&displayConfigId=71");
-    // let response = reqwest::blocking::get(url).unwrap();
-    let response = reqwest::get(url).await.unwrap();
-    let ical = response.text().await.unwrap();
+    let response = reqwest::get(url).await?;
+    let ical = response.text().await?;
 
-    ical
+    Ok(ical)
 }
 
-pub async fn get_zik_rooms() -> Vec<String> {
+pub async fn get_zik_rooms() -> Result<Vec<String>, reqwest::Error> {
     let resource_ids: Vec<u16> = vec![
         3224, 3223, 3222, 3260, 3259, 3258, 3254, 3253, 3252, 3251, 3250, 3249, 3248, 3247, 3280,
         3230, 3296, 3329, 3330, 3331, 3327, 3314, 3315, 3316, 3318,
@@ -79,9 +78,9 @@ pub async fn get_zik_rooms() -> Vec<String> {
     let mut stream = stream::iter(resource_ids);
 
     while let Some(cal) = stream.next().await {
-        let ret_val = fetch_ical_from_url(cal).await;
+        let ret_val = fetch_ical_from_url(cal).await?;
         return_vec.push(ret_val);
     }
 
-    return_vec
+    Ok(return_vec)
 }
