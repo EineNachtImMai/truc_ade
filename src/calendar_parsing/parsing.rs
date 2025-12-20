@@ -48,6 +48,10 @@ impl PartialEq for AllowedActivities {
 }
 impl Eq for AllowedActivities {}
 
+// ------------------------------------------------------------------------------------------------
+// FUNCTIONS
+// ------------------------------------------------------------------------------------------------
+
 fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
@@ -87,6 +91,11 @@ fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
     // sort the times and remove duplicate times
     cut_times.sort();
     cut_times.dedup();
+
+    // sanity check before we take the first element
+    if cut_times.len() <= 0 {
+        return cut_times;
+    }
 
     // remove chunks under 20 minutes
     let first_elem = cut_times[0];
@@ -347,8 +356,6 @@ fn get_allowed_level(
 pub fn get_zik_calendar(room_list: Arc<Vec<String>>) -> Calendar {
     let mut cal = init_ade_cal();
 
-    // TODO: the actual logic
-
     let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = get_cut_times(room_list.clone())
         .into_iter()
         .tuple_windows()
@@ -394,4 +401,18 @@ pub fn get_zik_calendar(room_list: Arc<Vec<String>>) -> Calendar {
     }
 
     cal.done()
+}
+
+mod tests {
+    use icalendar::Calendar;
+
+    use crate::calendar_parsing::parsing::parse_cal_to_cut_times;
+
+    #[test]
+    fn test_parsing() {
+        let cal = Calendar::new();
+        let _ret = parse_cal_to_cut_times(cal);
+
+        assert!(_ret == Vec::<chrono::DateTime<chrono::Utc>>::new());
+    }
 }

@@ -72,6 +72,10 @@ async fn handle_connection(
                     _ => mode = Mode::FreeRooms,
                 }
             }
+
+            if k == "room-list" {
+                todo!() // TODO: handle getting the room list as input
+            }
         }
     }
 
@@ -93,4 +97,16 @@ async fn handle_connection(
         .header("Content-Disposition", "inline; filename=ADECal.ics")
         .body(Body::from(content))
         .unwrap() // TODO: error handling
+}
+
+mod tests {
+    /* #[tokio::test]
+    async fn request_handling_test_free_rooms() {
+        todo!() // TODO: this test
+    }
+
+    #[tokio::test]
+    async fn request_handling_test_zik() {
+        todo!() // TODO: this test
+    } */
 }

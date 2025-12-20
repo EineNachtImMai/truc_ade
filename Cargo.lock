@@ -23,6 +23,7 @@ dependencies = [
  "icalendar",
  "itertools",
  "reqwest",
+ "serde_json",
  "tokio",
 ]
 

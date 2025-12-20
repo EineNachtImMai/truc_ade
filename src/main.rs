@@ -1,3 +1,4 @@
+pub mod caching;
 pub mod calendar_parsing;
 pub mod cli_params;
 pub mod free_rooms;

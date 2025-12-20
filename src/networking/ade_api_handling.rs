@@ -1,3 +1,4 @@
+use crate::caching::cal_caching::{get_resource_from_cache_file, save_resource_to_cache_file};
 use chrono::{prelude::*, Duration};
 use futures::stream::{self, StreamExt};
 
@@ -59,10 +60,17 @@ fn get_time_interval() -> (String, String) {
 }
 
 async fn fetch_ical_from_url(resource: u16) -> Result<String, reqwest::Error> {
+    if let Some(data) = get_resource_from_cache_file(resource) {
+        return Ok(data);
+    }
+
     let (first_date, last_date) = get_time_interval();
     let url = format!("https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={resource}&projectId=1&calType=ical&firstDate={first_date}&lastDate={last_date}&displayConfigId=71");
     let response = reqwest::get(url).await?;
     let ical = response.text().await?;
+
+    let _ = save_resource_to_cache_file(resource, ical.clone()); // Pas de gestion d'erreur pour
+    // l'instant
 
     Ok(ical)
 }
@@ -83,4 +91,38 @@ pub async fn get_zik_rooms() -> Result<Vec<String>, reqwest::Error> {
     }
 
     Ok(return_vec)
+}
+
+mod tests {
+    use crate::networking::ade_api_handling::*;
+
+    #[test]
+    fn time_interval_test() {
+        let today = format!("{}", Local::now());
+        let tomorrow = format!("{}", Local::now() + Duration::days(3));
+        let first_date = today.split(" ").collect::<Vec<&str>>()[0].to_string();
+        let last_date = tomorrow.split(" ").collect::<Vec<&str>>()[0].to_string();
+
+        assert!(get_time_interval() == (first_date, last_date));
+    }
+
+    #[tokio::test]
+    async fn get_ical_from_url_test1() {
+        let res = fetch_ical_from_url(0xffff).await;
+        if let Err(_result1) = res {
+            panic!();
+        } else if let Ok(res1) = res {
+            let expected = "BEGIN:VCALENDAR\r\nMETHOD:REQUEST\r\nPRODID:-//ADE/version 6.0\r\nVERSION:2.0\r\nCALSCALE:GREGORIAN\r\nEND:VCALENDAR\r\n";
+            if expected != res1 {
+                panic!();
+            }
+        };
+    }
+
+    #[tokio::test]
+    async fn get_ical_from_url_test2() {
+        if let Err(_result2) = fetch_ical_from_url(3224).await {
+            panic!();
+        };
+    }
 }
