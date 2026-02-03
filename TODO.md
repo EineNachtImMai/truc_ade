@@ -4,6 +4,7 @@
 - Find which rooms correspond to which level for the Zik thingy
 
 # Medium
+- HEAVY refactor
 - allow user to choose how long of a period the app covers (default 1 day)
 - logging
 
