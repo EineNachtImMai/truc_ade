@@ -14,6 +14,8 @@ use crate::{
     networking::ade_api_handling::get_free_rooms_calendar_list,
 };
 
+const MAX_CALS_TOGETHER: usize = 3;
+
 use std::sync::Arc;
 
 pub enum WindowPosition {
@@ -209,21 +211,44 @@ fn init_ade_cal() -> Calendar {
     cal
 }
 
+fn show_cals_together(calendar_list: Arc<Vec<EnseirbRoom>>) -> Calendar {
+    let mut outcal = init_ade_cal();
+
+    for calendar_file in calendar_list
+        .iter()
+        .filter_map(|x| x.id())
+        .filter_map(|x| get_resource_from_cache_file(x))
+    {
+        let mut appended: Calendar = match calendar_file.parse() {
+            Ok(_cal) => {_cal},
+            Err(_) => {Calendar::new()},
+        };
+        outcal.append(&mut appended);
+    }
+
+    outcal
+}
+
 pub async fn get_free_rooms_calendar(calendar_list: Arc<Vec<EnseirbRoom>>) -> Calendar {
     match get_cached_free_rooms_cal(calendar_list.clone()) {
         Some(cal) => return cal,
         None => {}
     }
 
-    let mut cal = init_ade_cal();
-
     let tmp: Vec<DateTime<Utc>>;
 
     tmp = get_cut_times(calendar_list.clone()).await;
 
+    // NOTE: HAS to be after tmp's creation so we're sure to get a cache hit
+    if calendar_list.len() <= MAX_CALS_TOGETHER {
+        return show_cals_together(calendar_list);
+    }
+
+    let mut cal = init_ade_cal();
+
     let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = tmp.into_iter().tuple_windows().collect();
 
-    dbg!(&cut_times);
+    // dbg!(&cut_times);
 
     for (start_time, end_time) in cut_times.iter() {
         let free_rooms = get_free_rooms(start_time, end_time, calendar_list.clone());
