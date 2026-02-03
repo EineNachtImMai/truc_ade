@@ -46,8 +46,8 @@ pub async fn serve(_zik_cal: Vec<EnseirbRoom>) {
 
 fn parse_rooms(rooms: String) -> Arc<Vec<EnseirbRoom>> {
     // format: rooms separated by a ,
-    let _roomlist: Vec<&str> = rooms.split(',').collect();
-    todo!();
+    let roomlist: Vec<EnseirbRoom> = rooms.split(',').filter_map(|x| EnseirbRoom::from_string(x.to_string())).collect();
+    Arc::from(roomlist)
 }
 
 async fn handle_connection(Query(params): Query<HashMap<String, String>>) -> Response<Body> {

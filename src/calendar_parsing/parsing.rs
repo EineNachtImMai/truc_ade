@@ -7,7 +7,9 @@ use icalendar::{
 use itertools::Itertools;
 
 use crate::{
-    caching::cal_caching::{cache_free_rooms_cal, get_cached_free_rooms_cal},
+    caching::cal_caching::{
+        cache_free_rooms_cal, get_cached_free_rooms_cal, get_resource_from_cache_file,
+    },
     calendar_parsing::rooms::EnseirbRoom,
     networking::ade_api_handling::get_free_rooms_calendar_list,
 };
@@ -135,32 +137,13 @@ fn get_free_rooms(
     end_time: &DateTime<Utc>,
     calendar_list: Arc<Vec<EnseirbRoom>>,
 ) -> String {
-    let mut free_rooms: Vec<&str> = vec![
-        "EA-S106/S107 (TD06)",
-        "EA-S108/S109 (TD07)",
-        "EA-S008/S009 (TD17)",
-        "EA-S101/S102 (TD04)",
-        "EA-S104/S105 (TD05)",
-        "EA-S110/S111 (TD08)",
-        "EA-S112/S113 (TD09)",
-        "EA-S114 (TD10)",
-        "EA-S115/S116 (TD11)",
-        "EA-S117/S118 (TD12)",
-        "EA-S119/S120 (TD13)",
-        "EA-S121/S122 (TD14)",
-        "EA-S225 (TD15)",
-        "EB-P010/P011 (TD20)",
-        "EB-P117 (TD21)",
-        "EB-P118/P119 (TD22)",
-        "EB-P121 (TD23)",
-        "EB-P123 (TD24)",
-        "EB-P145 (TD25)",
-        "EB-P147 (TD26)",
-        "EB-P148/P150 (TD27)",
-        "EB-P153/P156 (TD28)",
-    ];
+    let mut free_rooms: Vec<String> = calendar_list.iter().filter_map(|x| x.name()).collect();
 
-    for calendar_file in calendar_list.iter().filter_map(|x| x.name()) {
+    for calendar_file in calendar_list
+        .iter()
+        .filter_map(|x| x.id())
+        .filter_map(|x| get_resource_from_cache_file(x))
+    {
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
             Err(_) => continue, // NOTE: log?
