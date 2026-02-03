@@ -6,6 +6,12 @@ use icalendar::{
 
 use itertools::Itertools;
 
+use crate::{
+    caching::cal_caching::{cache_free_rooms_cal, get_cached_free_rooms_cal},
+    calendar_parsing::rooms::EnseirbRoom,
+    networking::ade_api_handling::get_free_rooms_calendar_list,
+};
+
 use std::sync::Arc;
 
 pub enum WindowPosition {
@@ -77,10 +83,18 @@ fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
     cut_times
 }
 
-fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
+async fn get_cut_times(calendar_list: Arc<Vec<EnseirbRoom>>) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
-    for calendar_file in calendar_list.iter() {
+    let cal_list;
+
+    cal_list = match get_free_rooms_calendar_list(calendar_list).await {
+        Ok(_list) => _list,
+        Err(_) => return cut_times,
+    };
+
+    for calendar_file in cal_list.iter() {
+        // dbg!(&calendar_file);
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
             Err(_) => continue, // NOTE: log?
@@ -119,7 +133,7 @@ fn get_cut_times(calendar_list: Arc<Vec<String>>) -> Vec<DateTime<Utc>> {
 fn get_free_rooms(
     start_time: &DateTime<Utc>,
     end_time: &DateTime<Utc>,
-    calendar_list: Arc<Vec<String>>,
+    calendar_list: Arc<Vec<EnseirbRoom>>,
 ) -> String {
     let mut free_rooms: Vec<&str> = vec![
         "EA-S106/S107 (TD06)",
@@ -146,7 +160,7 @@ fn get_free_rooms(
         "EB-P153/P156 (TD28)",
     ];
 
-    for calendar_file in calendar_list.iter() {
+    for calendar_file in calendar_list.iter().filter_map(|x| x.name()) {
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
             Err(_) => continue, // NOTE: log?
@@ -212,13 +226,21 @@ fn init_ade_cal() -> Calendar {
     cal
 }
 
-pub fn get_free_roooms_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
+pub async fn get_free_rooms_calendar(calendar_list: Arc<Vec<EnseirbRoom>>) -> Calendar {
+    match get_cached_free_rooms_cal(calendar_list.clone()) {
+        Some(cal) => return cal,
+        None => {}
+    }
+
     let mut cal = init_ade_cal();
 
-    let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = get_cut_times(calendar_list.clone())
-        .into_iter()
-        .tuple_windows()
-        .collect();
+    let tmp: Vec<DateTime<Utc>>;
+
+    tmp = get_cut_times(calendar_list.clone()).await;
+
+    let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = tmp.into_iter().tuple_windows().collect();
+
+    dbg!(&cut_times);
 
     for (start_time, end_time) in cut_times.iter() {
         let free_rooms = get_free_rooms(start_time, end_time, calendar_list.clone());
@@ -237,18 +259,22 @@ pub fn get_free_roooms_calendar(calendar_list: Arc<Vec<String>>) -> Calendar {
         );
     }
 
-    cal.done()
+    let cal_final = cal.done();
+
+    let _ = cache_free_rooms_cal(calendar_list, &cal_final); // TODO: logging
+
+    cal_final
 }
 
 fn get_allowed_level(
     start_time: &DateTime<Utc>,
     end_time: &DateTime<Utc>,
-    calendar_list: Arc<Vec<String>>,
+    calendar_list: Arc<Vec<EnseirbRoom>>,
 ) -> AllowedActivities {
     let mut allowed_level: AllowedActivities =
         AllowedActivities::LoudPlayingAndBattery(WindowPosition::Open);
 
-    for calendar_file in calendar_list.iter() {
+    for calendar_file in calendar_list.iter().filter_map(|x| x.name()) {
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
             Err(_) => continue,
@@ -353,10 +379,38 @@ fn get_allowed_level(
     allowed_level
 }
 
-pub fn get_zik_calendar(room_list: Arc<Vec<String>>) -> Calendar {
+pub async fn get_zik_calendar() -> Calendar {
+    let room_list: Arc<Vec<EnseirbRoom>> = Arc::from(vec![
+        EnseirbRoom::TD01,
+        EnseirbRoom::TD02,
+        EnseirbRoom::TD03,
+        EnseirbRoom::TD04,
+        EnseirbRoom::TD05,
+        EnseirbRoom::TD06,
+        EnseirbRoom::TD07,
+        EnseirbRoom::TD08,
+        EnseirbRoom::TD09,
+        EnseirbRoom::TD10,
+        EnseirbRoom::TD11,
+        EnseirbRoom::TD12,
+        EnseirbRoom::TD13,
+        EnseirbRoom::TD14,
+        EnseirbRoom::TD15,
+        EnseirbRoom::TD17,
+        EnseirbRoom::TD20,
+        EnseirbRoom::TD21,
+        EnseirbRoom::TD22,
+        EnseirbRoom::TD23,
+        EnseirbRoom::TD24,
+        EnseirbRoom::TD25,
+        EnseirbRoom::TD26,
+        EnseirbRoom::TD27,
+        EnseirbRoom::TD28,
+    ]);
     let mut cal = init_ade_cal();
 
     let cut_times: Vec<(DateTime<Utc>, DateTime<Utc>)> = get_cut_times(room_list.clone())
+        .await
         .into_iter()
         .tuple_windows()
         .collect();
@@ -401,18 +455,4 @@ pub fn get_zik_calendar(room_list: Arc<Vec<String>>) -> Calendar {
     }
 
     cal.done()
-}
-
-mod tests {
-    use icalendar::Calendar;
-
-    use crate::calendar_parsing::parsing::parse_cal_to_cut_times;
-
-    #[test]
-    fn test_parsing() {
-        let cal = Calendar::new();
-        let _ret = parse_cal_to_cut_times(cal);
-
-        assert!(_ret == Vec::<chrono::DateTime<chrono::Utc>>::new());
-    }
 }

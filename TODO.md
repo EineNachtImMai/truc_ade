@@ -2,22 +2,23 @@
 
 # High
 - if less than 3 (?) rooms, show them side by side
-- optimization: in get_free_rooms and get_zik_..., treat all time windows at once
 - Find which rooms correspond to which level for the Zik thingy
+- another layer of caching after the processing
 
 # Medium
 - memory optimizations (borrow the array of calendars instead of cloning it every time)
-- add other rooms and options to select which rooms you want to watch
 - allow user to choose how long of a period the app covers (default 1 day)
 - logging
 - more tests
-- test caching to see if it's worth it
+- refactor: revamp the errors to use Box<dyn Error>
 
 # Low
 - French readme version
 - QR code for easier ADE app integration
 
 # Not planned
+
+- optimization: in get_free_rooms and get_zik_..., treat all time windows at once => couldn't find a way to optimize it
 
 
 
@@ -35,3 +36,4 @@
 - CACHING
 - tests
 - investigate why so slow despite multithreading
+- test caching to see if it's worth it (IT IS)
