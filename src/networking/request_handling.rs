@@ -5,6 +5,7 @@ use std::sync::Arc;
 use crate::calendar_parsing::rooms::EnseirbRoom;
 use crate::cli_params::arg_parsing::Args;
 use clap::Parser;
+use itertools::Itertools;
 
 use crate::calendar_parsing::parsing::{get_free_rooms_calendar, get_zik_calendar};
 
@@ -15,44 +16,39 @@ enum Mode {
     Zik,
 }
 
-pub async fn serve(_zik_cal: Vec<EnseirbRoom>) {
+pub async fn serve() {
     let args = Args::parse();
     let port = args.port;
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    /* let listener = match TcpListener::bind(addr.into()) {
-        Ok(_listener) => _listener,
-        Err(e) => {
-            eprintln!("Failed to bind to address");
-            return;
-        }
-    }; */
-
     let app = Router::new().route("/", get(handle_connection));
 
     let listener = match tokio::net::TcpListener::bind(addr.to_string()).await {
         Ok(_listener) => _listener,
-        Err(_e) => {
-            eprintln!("Failed to set up listener");
+        Err(e) => {
+            tracing::error!("Failed to set up listener: {e}");
             return;
         }
     };
 
-    eprintln!("Listening on {}", addr);
+    tracing::info!("Listening on {}", addr);
 
     let _ = axum::serve(listener, app).await; // TODO: LOGGING
 }
 
 fn parse_rooms(rooms: String) -> Arc<Vec<EnseirbRoom>> {
     // format: rooms separated by a ,
-    let roomlist: Vec<EnseirbRoom> = rooms.split(',').filter_map(|x| EnseirbRoom::from_string(x.to_string())).collect();
+    let roomlist: Vec<EnseirbRoom> = rooms
+        .split(',')
+        .filter_map(|x| EnseirbRoom::from_string(x.to_string()))
+        .dedup()
+        .collect();
     Arc::from(roomlist)
 }
 
 async fn handle_connection(Query(params): Query<HashMap<String, String>>) -> Response<Body> {
-    // println!["{:?}", req];
-
+    tracing::info!("Got a connection!");
     let mut mode: Mode = Mode::FreeRooms;
 
     let mut roomlist: Arc<Vec<EnseirbRoom>> = Arc::new(vec![
@@ -84,7 +80,6 @@ async fn handle_connection(Query(params): Query<HashMap<String, String>>) -> Res
     ]);
 
     if let Some(thing) = params.get("mode") {
-        // println!["mode: {}", v];
         match thing.as_str() {
             "zik" => mode = Mode::Zik,
             _ => mode = Mode::FreeRooms,
@@ -99,11 +94,11 @@ async fn handle_connection(Query(params): Query<HashMap<String, String>>) -> Res
 
     match mode {
         Mode::Zik => {
-            println!["chosen mode: zik"];
+            tracing::info!["chosen mode: zik"];
             content = format!("{}", get_zik_calendar().await)
         }
         Mode::FreeRooms => {
-            println!["chosen mode: free rooms"];
+            tracing::info!["chosen mode: free rooms"];
             content = format!["{}", get_free_rooms_calendar(roomlist).await];
         }
     }

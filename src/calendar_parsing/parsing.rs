@@ -70,14 +70,20 @@ fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) = match event.get_start()
             {
                 Some(start_) => start_,
-                None => continue, // we simply skip the iteration if we're unable to parse
+                None => {
+                    tracing::warn!("Failed to parse event start time");
+                    continue;
+                }
             } {
                 cut_times.push(time);
             };
 
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(time)) = match event.get_end() {
                 Some(end_) => end_,
-                None => continue, // we simply skip the iteration if we're unable to parse
+                None => {
+                    tracing::warn!("Failed to parse event end time");
+                    continue;
+                }
             } {
                 cut_times.push(time);
             }
@@ -94,14 +100,19 @@ async fn get_cut_times(calendar_list: Arc<Vec<EnseirbRoom>>) -> Vec<DateTime<Utc
 
     cal_list = match get_free_rooms_calendar_list(calendar_list).await {
         Ok(_list) => _list,
-        Err(_) => return cut_times,
+        Err(_) => {
+            tracing::error!("Failed to get calendar cut times");
+            return cut_times;
+        }
     };
 
     for calendar_file in cal_list.iter() {
-        // dbg!(&calendar_file);
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
-            Err(_) => continue, // NOTE: log?
+            Err(_) => {
+                tracing::warn!("Failed to parse calendar file, skipping...");
+                continue;
+            }
         };
         cut_times.extend(parse_cal_to_cut_times(cal));
     }
@@ -148,7 +159,10 @@ fn get_free_rooms(
     {
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
-            Err(_) => continue, // NOTE: log?
+            Err(_) => {
+                tracing::warn!("Failed to parse calendar file. Skipping...");
+                continue;
+            }
         };
 
         for component in &cal.components {
@@ -165,7 +179,10 @@ fn get_free_rooms(
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_start_time)) =
                 match event.get_start() {
                     Some(start_) => start_,
-                    None => continue, // we simply skip the iteration if we're unable to parse
+                    None => {
+                        tracing::warn!("Failed to parse event start time. Skipping...");
+                        continue;
+                    } // we simply skip the iteration if we're unable to parse
                 }
             {
                 start = event_start_time;
@@ -176,7 +193,10 @@ fn get_free_rooms(
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_end_time)) =
                 match event.get_end() {
                     Some(end_) => end_,
-                    None => continue, // we simply skip the iteration if we're unable to parse
+                    None => {
+                        tracing::warn!("Failed to parse event end time. Skipping...");
+                        continue;
+                    } // we simply skip the iteration if we're unable to parse
                 }
             {
                 end = event_end_time;
@@ -186,7 +206,10 @@ fn get_free_rooms(
 
             let loc = match event.get_location() {
                 Some(loc_) => loc_,
-                None => continue,
+                None => {
+                    tracing::warn!("Failed to parse event location. Skipping...");
+                    continue;
+                } // we simply skip the iteration if we're unable to parse
             };
 
             if (&start <= start_time && start_time < &end)
@@ -220,8 +243,11 @@ fn show_cals_together(calendar_list: Arc<Vec<EnseirbRoom>>) -> Calendar {
         .filter_map(|x| get_resource_from_cache_file(x))
     {
         let mut appended: Calendar = match calendar_file.parse() {
-            Ok(_cal) => {_cal},
-            Err(_) => {Calendar::new()},
+            Ok(_cal) => _cal,
+            Err(_) => {
+                tracing::error!("Failed to parse calendar file, defaulting to empty calendar instead for this iteration...");
+                Calendar::new()
+            }
         };
         outcal.append(&mut appended);
     }
@@ -232,7 +258,9 @@ fn show_cals_together(calendar_list: Arc<Vec<EnseirbRoom>>) -> Calendar {
 pub async fn get_free_rooms_calendar(calendar_list: Arc<Vec<EnseirbRoom>>) -> Calendar {
     match get_cached_free_rooms_cal(calendar_list.clone()) {
         Some(cal) => return cal,
-        None => {}
+        None => {
+            tracing::info!("Cache miss, downloading and parsing free rooms...")
+        }
     }
 
     let tmp: Vec<DateTime<Utc>>;
@@ -285,7 +313,10 @@ fn get_allowed_level(
     for calendar_file in calendar_list.iter().filter_map(|x| x.name()) {
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
-            Err(_) => continue,
+            Err(_) => {
+                tracing::warn!("Failed to parse calendar file. Skipping iteration...");
+                continue;
+            }
         };
 
         for component in &cal.components {
@@ -302,7 +333,10 @@ fn get_allowed_level(
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_start_time)) =
                 match event.get_start() {
                     Some(start_) => start_,
-                    None => continue, // we simply skip the iteration if we're unable to parse
+                    None => {
+                        tracing::warn!("Failed to parse event start time. Skipping...");
+                        continue;
+                    } // we simply skip the iteration if we're unable to parse
                 }
             {
                 start = event_start_time;
@@ -313,7 +347,10 @@ fn get_allowed_level(
             if let DatePerhapsTime::DateTime(CalendarDateTime::Utc(event_end_time)) =
                 match event.get_end() {
                     Some(end_) => end_,
-                    None => continue, // we simply skip the iteration if we're unable to parse
+                    None => {
+                        tracing::warn!("Failed to parse event end time. Skipping...");
+                        continue;
+                    } // we simply skip the iteration if we're unable to parse
                 }
             {
                 end = event_end_time;
@@ -375,7 +412,9 @@ fn get_allowed_level(
                             }
                         }
 
-                        _ => {}
+                        _ => {
+                            tracing::warn!("Unknown room encoutered. Ignoring...")
+                        }
                     }
                 } else {
                     continue;

@@ -12,9 +12,9 @@ const BATCH_SIZE: usize = 5;
 pub async fn get_free_rooms_calendar_list(
     resource_ids: Arc<Vec<EnseirbRoom>>,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    println!("Downloading...");
+    tracing::info!("Downloading...");
     let return_vec: Vec<String> = fetch_icals_from_urls(resource_ids.clone()).await?;
-    println!("Download done!");
+    tracing::info!("Download done!");
 
     Ok(return_vec)
 }
