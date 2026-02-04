@@ -5,12 +5,12 @@
 
 # Medium
 - HEAVY refactor
-- allow user to choose how long of a period the app covers (default 1 day)
-- logging
+- README update
 
 # Low
 - French readme version
 - QR code for easier ADE app integration
+- allow HOST to choose how long of a period the app covers (default 1 day) (if user, DDOS vector)
 
 # Not planned
 
@@ -39,3 +39,4 @@
 - memory optimizations (borrow the array of calendars instead of cloning it every time)
 - refactor: revamp the errors to use Box<dyn Error>
 - if less than 3 (?) rooms, show them side by side instead
+- logging
