@@ -10,7 +10,7 @@ pub struct Args {
 
     /// The time period covered by the free rooms API
     /// Measured in days
-    #[arg(short, long, default_value_t = 1)]
+    #[arg(short, long, default_value_t = 3)]
     pub free_rooms_timespan: u16,
 
     /// The number of weeks covered by the Zik API
