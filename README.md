@@ -88,7 +88,7 @@ The default mode. Can also be selected through the "mode" URL parameter. You can
 "room-list" parameter (can only handle TD rooms for now). If there is less than 3 rooms selected, it will display them side by side to make
 it more readable. Otherwise, it will parse the calendars into sections, and then display which rooms are available during each time period.
 
-### Zik Mode
+### Zik Mode (under construction, not fully functionnal yet)
 
 Can be selected through the "mode" URL parameter. It parses the calendars of the rooms around the Zik, and shows the maximum allowed
 noise level accordingly (for example, if the classroom directly above is busy, the noise level should be really low). It doesn't care

@@ -5,8 +5,7 @@
 
 # Medium
 - HEAVY refactor
-- README update
-- Change where and how the free rooms are displayed in the calendar view
+- Change where (spread between 2 fields) and how (shorter name) the free rooms are displayed in the calendar view
 
 # Low
 - French readme version
@@ -40,3 +39,4 @@
 - refactor: revamp the errors to use Box<dyn Error>
 - if less than 3 (?) rooms, show them side by side instead
 - logging
+- README update
