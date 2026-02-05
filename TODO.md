@@ -6,6 +6,7 @@
 # Medium
 - HEAVY refactor
 - README update
+- Change where and how the free rooms are displayed in the calendar view
 
 # Low
 - French readme version
@@ -13,7 +14,6 @@
 - allow HOST to choose how long of a period the app covers (default 1 day) (if user, DDOS vector)
 
 # Not planned
-
 - more tests
 - optimization: in get_free_rooms and get_zik_..., treat all time windows at once => couldn't find a way to optimize it
 

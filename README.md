@@ -1,12 +1,13 @@
-# The project that will make my life easier
+# The ADE thingy
 
 ## About
 
 This project was originally intended for my own use, but I thought I might as well open-source it in case it's useful to someone else.
-It solves a simple problem: I don't wanna spend 20 minutes looking for a free room ever time I don't have class. It queries the ADE API,
-retrieves the schedule for every room, and creates a new calendar that shows what rooms are free at any given time.
+It queries the ADE API, retrieves the schedule for every room, and creates a new calendar that shows what rooms are free at any given time.
+
 It exposes a simple web API that re-computes this calendar (in case there were any changes) and outputs every time it is queried.
-Therefore, if you host this utility, you can add it to you ADE calendar app by using it as an input URL (see the [ADE app integration](#ade-app-integration) section)
+
+Therefore, if you host this utility, you can add it to your ADE calendar app by using it as an input URL (see the [ADE app integration](#ade-app-integration) section)
 
 ## Building and running
 
@@ -67,6 +68,36 @@ The project also includes a Dockerfile and docker-compose.yaml. You can therefor
 docker compose up
 ```
 
+## API description
+
+### How do I query the API?
+
+GET request 👍
+
+### URL Parameters
+
+- mode:
+    - free-rooms
+    - zik
+- room-list:
+    - room numbers, separated by a comma
+
+### Free Rooms
+
+The default mode. Can also be selected through the "mode" URL parameter. You can select which rooms to include by changing the
+"room-list" parameter (can only handle TD rooms for now). If there is less than 3 rooms selected, it will display them side by side to make
+it more readable. Otherwise, it will parse the calendars into sections, and then display which rooms are available during each time period.
+
+### Zik Mode
+
+Can be selected through the "mode" URL parameter. It parses the calendars of the rooms around the Zik, and shows the maximum allowed
+noise level accordingly (for example, if the classroom directly above is busy, the noise level should be really low). It doesn't care
+about the "room-list" parameter.
+
+#### Possibly Planned
+
+I might try to make it smarter by checking if there are exams going on?
+
 ## ADE app integration
 
 This app is exposed through port `7878` (currently this is hardcoded, however it will later become an argument).
@@ -75,3 +106,7 @@ Any request to this port will be answered with the updated calendar. Therefore, 
 - Under "Scan QR code", enter the address of your instance (example: https://ade.example.com)
 - Name the profile
 - Validate the operation
+
+#### Possibly Planned
+
+I might add an interface that generates a QR code with your chosen mode and rooms.
