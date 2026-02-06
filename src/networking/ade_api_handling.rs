@@ -1,9 +1,8 @@
 use crate::{
     caching::cal_caching::{get_resource_from_cache_file, save_resource_to_cache_file},
-    calendar_parsing::rooms::EnseirbRoom,
-    cli_params::arg_parsing::Args,
+    cli_params::*,
+    utils::rooms::EnseirbRoom,
 };
-use clap::Parser;
 use chrono::{prelude::*, Duration};
 use futures::{stream, StreamExt};
 use reqwest::Url;
@@ -44,8 +43,6 @@ async fn fetch_icals_from_urls(
                 None => 0,
             };
             if let Some(data) = get_resource_from_cache_file(id) {
-                // TODO: change signature
-                // NOTE: I have no idea what that todo meant anymore
                 return Some(data);
             }
 

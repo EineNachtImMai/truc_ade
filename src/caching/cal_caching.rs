@@ -3,7 +3,7 @@ use icalendar::Calendar;
 use std::sync::Arc;
 use std::{collections::HashMap, error::Error, fs, io::BufReader};
 
-use crate::calendar_parsing::rooms::EnseirbRoom;
+use crate::utils::rooms::EnseirbRoom;
 
 // try to save the data to the file
 // if successful, update the resource last updated time
@@ -124,7 +124,7 @@ pub fn get_cached_free_rooms_cal(cal_list: Arc<Vec<EnseirbRoom>>) -> Option<Cale
 pub fn cache_free_rooms_cal(
     cal_list: Arc<Vec<EnseirbRoom>>,
     value: &Calendar,
-) -> Result<(), Box<dyn Error>> // TODO: caches the value to a file corresponding to the provided calendar list
+) -> Result<(), Box<dyn Error>>
 {
     let file_name = format!("cache/{}.ics", room_list_to_filename(cal_list.clone()));
     let data = format!("{}", value);

@@ -2,19 +2,14 @@ use std::{collections::HashMap, net::SocketAddr};
 
 use std::sync::Arc;
 
-use crate::calendar_parsing::rooms::EnseirbRoom;
-use crate::cli_params::arg_parsing::Args;
-use clap::Parser;
+use crate::cli_params::*;
+use crate::utils::rooms::EnseirbRoom;
 use itertools::Itertools;
 
 use crate::calendar_parsing::parsing::{get_free_rooms_calendar, get_zik_calendar};
+use crate::utils::modes::Mode;
 
 use axum::{body::Body, extract::Query, response::Response, routing::get, Router};
-
-enum Mode {
-    FreeRooms,
-    Zik,
-}
 
 pub async fn serve() {
     let args = Args::parse();
@@ -34,7 +29,9 @@ pub async fn serve() {
 
     tracing::info!("Listening on {}", addr);
 
-    let _ = axum::serve(listener, app).await; // TODO: LOGGING
+    if let Err(e) = axum::serve(listener, app).await {
+        tracing::error!("Failed to setup server: {e}. Shutting down...");
+    };
 }
 
 fn parse_rooms(rooms: String) -> Arc<Vec<EnseirbRoom>> {
@@ -103,21 +100,15 @@ async fn handle_connection(Query(params): Query<HashMap<String, String>>) -> Res
         }
     }
 
-    Response::builder()
+    match Response::builder()
         .header("Content-Type", "text/calendar;charset=UTF-8")
         .header("Content-Disposition", "inline; filename=ADECal.ics")
         .body(Body::from(content))
-        .unwrap() // TODO: error handling
-}
-
-mod tests {
-    /* #[tokio::test]
-    async fn request_handling_test_free_rooms() {
-        todo!() // TODO: this test
+    {
+        Ok(resp) => resp,
+        Err(e) => {
+            tracing::warn!("Failed to build new response: {e}. Defaulting to empty response.");
+            Response::new(Body::empty())
+        }
     }
-
-    #[tokio::test]
-    async fn request_handling_test_zik() {
-        todo!() // TODO: this test
-    } */
 }

@@ -3,6 +3,7 @@ pub mod calendar_parsing;
 pub mod cli_params;
 pub mod free_rooms;
 pub mod networking;
+pub mod utils;
 
 use free_rooms::serve_free_rooms;
 
