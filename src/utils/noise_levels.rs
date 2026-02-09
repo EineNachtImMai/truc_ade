@@ -28,7 +28,7 @@ impl Ord for AllowedActivities {
 }
 impl PartialOrd for AllowedActivities {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(&other))
+        Some(self.cmp(other))
     }
 }
 impl PartialEq for AllowedActivities {

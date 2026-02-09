@@ -1,4 +1,4 @@
-use chrono::{prelude::*, Duration};
+use chrono::{Duration, prelude::*};
 use icalendar::{
     Calendar, CalendarComponent, CalendarDateTime, Component, DatePerhapsTime, Event, EventLike,
     Property,
@@ -19,10 +19,6 @@ use crate::utils::rooms::EnseirbRoom;
 const MAX_CALS_TOGETHER: usize = 3;
 
 use std::sync::Arc;
-
-// ------------------------------------------------------------------------------------------------
-// FUNCTIONS
-// ------------------------------------------------------------------------------------------------
 
 fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
@@ -58,9 +54,7 @@ fn parse_cal_to_cut_times(cal: Calendar) -> Vec<DateTime<Utc>> {
 async fn get_cut_times(calendar_list: Arc<Vec<EnseirbRoom>>) -> Vec<DateTime<Utc>> {
     let mut cut_times: Vec<DateTime<Utc>> = Vec::new();
 
-    let cal_list;
-
-    cal_list = match get_free_rooms_calendar_list(calendar_list).await {
+    let cal_list = match get_free_rooms_calendar_list(calendar_list).await {
         Ok(_list) => _list,
         Err(_) => {
             tracing::error!("Failed to get calendar cut times");
@@ -84,7 +78,7 @@ async fn get_cut_times(calendar_list: Arc<Vec<EnseirbRoom>>) -> Vec<DateTime<Utc
     cut_times.dedup();
 
     // sanity check before we take the first element
-    if cut_times.len() <= 0 {
+    if cut_times.is_empty() {
         return cut_times;
     }
 
@@ -112,12 +106,12 @@ fn get_free_rooms(
     end_time: &DateTime<Utc>,
     calendar_list: Arc<Vec<EnseirbRoom>>,
 ) -> String {
-    let mut free_rooms: Vec<String> = calendar_list.iter().filter_map(|x| x.name()).collect();
+    let mut free_room_names: Vec<String> = calendar_list.iter().filter_map(|x| x.name()).collect();
 
     for calendar_file in calendar_list
         .iter()
         .filter_map(|x| x.id())
-        .filter_map(|x| get_resource_from_cache_file(x))
+        .filter_map(get_resource_from_cache_file)
     {
         let cal: Calendar = match calendar_file.parse() {
             Ok(cal_) => cal_,
@@ -177,12 +171,12 @@ fn get_free_rooms(
             if (&start <= start_time && start_time < &end)
                 || (&start < end_time && end_time <= &end)
             {
-                free_rooms.retain(|value| *value != loc);
+                free_room_names.retain(|value| *value != loc);
             }
         }
     }
 
-    free_rooms.join(", ")
+    free_room_names.join(", ")
 }
 
 fn init_ade_cal() -> Calendar {
@@ -202,12 +196,14 @@ fn show_cals_together(calendar_list: Arc<Vec<EnseirbRoom>>) -> Calendar {
     for calendar_file in calendar_list
         .iter()
         .filter_map(|x| x.id())
-        .filter_map(|x| get_resource_from_cache_file(x))
+        .filter_map(get_resource_from_cache_file)
     {
         let mut appended: Calendar = match calendar_file.parse() {
             Ok(_cal) => _cal,
             Err(_) => {
-                tracing::error!("Failed to parse calendar file, defaulting to empty calendar instead for this iteration...");
+                tracing::error!(
+                    "Failed to parse calendar file, defaulting to empty calendar instead for this iteration..."
+                );
                 Calendar::new()
             }
         };
@@ -225,9 +221,7 @@ pub async fn get_free_rooms_calendar(calendar_list: Arc<Vec<EnseirbRoom>>) -> Ca
         }
     }
 
-    let tmp: Vec<DateTime<Utc>>;
-
-    tmp = get_cut_times(calendar_list.clone()).await;
+    let tmp: Vec<DateTime<Utc>> = get_cut_times(calendar_list.clone()).await;
 
     // NOTE: HAS to be after tmp's creation so we're sure to get a cache hit
     if calendar_list.len() <= MAX_CALS_TOGETHER {
@@ -242,8 +236,8 @@ pub async fn get_free_rooms_calendar(calendar_list: Arc<Vec<EnseirbRoom>>) -> Ca
 
     for (start_time, end_time) in cut_times.iter() {
         let free_rooms = get_free_rooms(start_time, end_time, calendar_list.clone());
-        let start = DatePerhapsTime::DateTime(CalendarDateTime::Utc(start_time.clone()));
-        let end = DatePerhapsTime::DateTime(CalendarDateTime::Utc(end_time.clone()));
+        let start = DatePerhapsTime::DateTime(CalendarDateTime::Utc(*start_time));
+        let end = DatePerhapsTime::DateTime(CalendarDateTime::Utc(*end_time));
         cal.push(
             Event::new()
                 .description("Salles Libres:")
@@ -428,8 +422,8 @@ pub async fn get_zik_calendar() -> Calendar {
 
     for (start_time, end_time) in cut_times.iter() {
         let allowed_activities = get_allowed_level(start_time, end_time, room_list.clone());
-        let start = DatePerhapsTime::DateTime(CalendarDateTime::Utc(start_time.clone()));
-        let end = DatePerhapsTime::DateTime(CalendarDateTime::Utc(end_time.clone()));
+        let start = DatePerhapsTime::DateTime(CalendarDateTime::Utc(*start_time));
+        let end = DatePerhapsTime::DateTime(CalendarDateTime::Utc(*end_time));
 
         let activity = match allowed_activities {
             AllowedActivities::QuietPlaying(WindowPosition::Closed) => {

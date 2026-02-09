@@ -169,12 +169,7 @@ impl EnseirbRoom {
     }
 
     pub fn url(&self, start_date: String, end_date: String) -> Option<String> {
-        let resid = self.id();
-        match resid {
-            Some(id) => {
-                return Some(format!("https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={id}&projectId=1&calType=ical&firstDate={start_date}&lastDate={end_date}&displayConfigId=71"));
-            }
-            None => None,
-        }
+        self.id()
+            .map(|id| format!( "https://adeapp.bordeaux-inp.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={id}&projectId=1&calType=ical&firstDate={start_date}&lastDate={end_date}&displayConfigId=71"))
     }
 }

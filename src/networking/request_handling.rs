@@ -9,7 +9,7 @@ use itertools::Itertools;
 use crate::calendar_parsing::parsing::{get_free_rooms_calendar, get_zik_calendar};
 use crate::utils::modes::Mode;
 
-use axum::{body::Body, extract::Query, response::Response, routing::get, Router};
+use axum::{Router, body::Body, extract::Query, response::Response, routing::get};
 
 pub async fn serve() {
     let args = Args::parse();
@@ -87,18 +87,16 @@ async fn handle_connection(Query(params): Query<HashMap<String, String>>) -> Res
         roomlist = parse_rooms(thing.into());
     }
 
-    let content: String;
-
-    match mode {
+    let content = match mode {
         Mode::Zik => {
             tracing::info!["chosen mode: zik"];
-            content = format!("{}", get_zik_calendar().await)
+            format!("{}", get_zik_calendar().await)
         }
         Mode::FreeRooms => {
             tracing::info!["chosen mode: free rooms"];
-            content = format!["{}", get_free_rooms_calendar(roomlist).await];
+            format!("{}", get_free_rooms_calendar(roomlist).await)
         }
-    }
+    };
 
     match Response::builder()
         .header("Content-Type", "text/calendar;charset=UTF-8")

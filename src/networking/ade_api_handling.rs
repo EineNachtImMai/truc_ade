@@ -3,8 +3,8 @@ use crate::{
     cli_params::*,
     utils::rooms::EnseirbRoom,
 };
-use chrono::{prelude::*, Duration};
-use futures::{stream, StreamExt};
+use chrono::{Duration, prelude::*};
+use futures::{StreamExt, stream};
 use reqwest::Url;
 use std::sync::Arc;
 
@@ -36,12 +36,9 @@ async fn fetch_icals_from_urls(
     let client = reqwest::Client::new();
     let resource_processing = |resource: &EnseirbRoom| {
         let client = client.clone();
-        let res = resource.clone();
+        let res = *resource;
         tokio::spawn(async move {
-            let id = match res.id() {
-                Some(_id) => _id,
-                None => 0,
-            };
+            let id = res.id().unwrap_or_default();
             if let Some(data) = get_resource_from_cache_file(id) {
                 return Some(data);
             }
